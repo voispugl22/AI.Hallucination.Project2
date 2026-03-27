@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hallucination Hunter</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --correct: #22c55e;
+            --wrong: #ef4444;
+            --text: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 { color: var(--accent); margin-bottom: 0.5rem; }
+        
+        .score-board { margin-bottom: 2rem; font-weight: bold; }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+
+        .option-card {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, border 0.2s;
+            border: 2px solid transparent;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .feedback {
+            display: none;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            line-height: 1.6;
+        }
+
+        .hallucination-highlight {
+            background-color: rgba(239, 68, 68, 0.3);
+            text-decoration: underline wavy var(--wrong);
+            padding: 2px 4px;
+        }
+
+        button {
+            background: var(--accent);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            color: var(--bg);
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .game-area { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hallucination Hunter</h1>
+    <p>Which of these statements is 100% factual?</p>
+    
+    <div class="score-board">Score: <span id="score">0</span></div>
+
+    <div class="game-area" id="game-area">
+        </div>
+
+    <div id="feedback-area" class="feedback">
+        <h2 id="result-text"></h2>
+        <p id="explanation"></p>
+        <button onclick="nextRound()">Next Round</button>
+    </div>
+</div>
+
+<script>
+    // A sample pool of data. 
+    // For a "truly infinite" feel, you'd fetch from an API here.
+    const questionPool = [
+        {
+            fact: "The Great Wall of China is not visible from the moon with the naked eye.",
+            fake: "The Great Wall of China is the <span class='hallucination-highlight'>only man-made structure visible from the moon</span>.",
+            explanation: "While it is a common myth, Apollo astronauts confirmed it cannot be seen without aid."
+        },
+        {
+            fact: "The Eiffel Tower can grow taller in the summer due to thermal expansion of iron.",
+            fake: "The Eiffel Tower <span class='hallucination-highlight'>shrinks in the summer</span> because the heat compresses the iron rivets.",
+            explanation: "Physics 101: Heat causes expansion, not contraction! It can grow by up to 15cm."
+        },
+        {
+            fact: "Honey never spoils; archaeologists have found edible honey in ancient Egyptian tombs.",
+            fake: "Honey lasts for exactly <span class='hallucination-highlight'>50 years before fermenting into toxic spores</span>.",
+            explanation: "Honey's low moisture and acidic pH make it an eternal shelf-life champion."
+        }
+    ];
+
+    let score = 0;
+    let currentQuestion = {};
+
+    function nextRound() {
+        document.getElementById('feedback-area').style.display = 'none';
+        const gameArea = document.getElementById('game-area');
+        gameArea.innerHTML = '';
+        
+        // Pick a random question
+        currentQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
+        
+        // Randomly decide if Fact is Left or Right
+        const isFactLeft = Math.random() > 0.5;
+        
+        const card1 = createCard(isFactLeft ? currentQuestion.fact : stripHighlights(currentQuestion.fake), isFactLeft);
+        const card2 = createCard(!isFactLeft ? currentQuestion.fact : stripHighlights(currentQuestion.fake), !isFactLeft);
+        
+        gameArea.appendChild(card1);
+        gameArea.appendChild(card2);
+    }
+
+    function createCard(text, isReal) {
+        const div = document.createElement('div');
+        div.className = 'option-card';
+        div.innerText = text;
+        div.onclick = () => checkAnswer(isReal);
+        return div;
+    }
+
+    function stripHighlights(html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || "";
+    }
+
+    function checkAnswer(isReal) {
+        const feedbackArea = document.getElementById('feedback-area');
+        const resultText = document.getElementById('result-text');
+        const explanation = document.getElementById('explanation');
+
+        if (isReal) {
+            score++;
+            resultText.innerText = "Correct! You spotted the truth.";
+            resultText.style.color = "var(--correct)";
+        } else {
+            resultText.innerText = "Fooled! That was a hallucination.";
+            resultText.style.color = "var(--wrong)";
+        }
+
+        document.getElementById('score').innerText = score;
+        explanation.innerHTML = `<strong>The Hallucination:</strong> ${currentQuestion.fake}<br><br>${currentQuestion.explanation}`;
+        feedbackArea.style.display = 'block';
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    // Start the game
+    nextRound();
+</script>
+
+</body>
+</html>
